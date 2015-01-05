@@ -71,7 +71,8 @@
 	 * @public
 	 */
 	Lazy.Defaults = {
-		lazyLoad: false
+		lazyLoad: false,
+		preLoadItems: 0
 	}
 
 	/**
@@ -80,39 +81,42 @@
 	 * @protected
 	 */
 	Lazy.prototype.load = function(position) {
-		var $item = this._core.$stage.children().eq(position),
-			$elements = $item && $item.find('.owl-lazy');
 
-		if (!$elements || $.inArray($item.get(0), this._loaded) > -1) {
-			return;
-		}
+    var preLoadEnd = position + this._core.options.preLoadItems;
+    for(; position <= preLoadEnd; position++) {
+      var $item = this._core.$stage.children().eq(position),
+        $elements = $item && $item.find('.owl-lazy');
 
-		$elements.each($.proxy(function(index, element) {
-			var $element = $(element), image,
-				url = (window.devicePixelRatio > 1 && $element.attr('data-src-retina')) || $element.attr('data-src');
+      if (!$elements || $.inArray($item.get(0), this._loaded) > -1) {
+        continue;
+      }
 
-			this._core.trigger('load', { element: $element, url: url }, 'lazy');
+      $elements.each($.proxy(function(index, element) {
+        var $element = $(element), image,
+          url = (window.devicePixelRatio > 1 && $element.attr('data-src-retina')) || $element.attr('data-src');
 
-			if ($element.is('img')) {
-				$element.one('load.owl.lazy', $.proxy(function() {
-					$element.css('opacity', 1);
-					this._core.trigger('loaded', { element: $element, url: url }, 'lazy');
-				}, this)).attr('src', url);
-			} else {
-				image = new Image();
-				image.onload = $.proxy(function() {
-					$element.css({
-						'background-image': 'url(' + url + ')',
-						'opacity': '1'
-					});
-					this._core.trigger('loaded', { element: $element, url: url }, 'lazy');
-				}, this);
-				image.src = url;
-			}
-		}, this));
+        this._core.trigger('load', { element: $element, url: url }, 'lazy');
 
-		this._loaded.push($item.get(0));
-	}
+        if ($element.is('img')) {
+          $element.one('load.owl.lazy', $.proxy(function() {
+            $element.css('opacity', 1);
+            this._core.trigger('loaded', { element: $element, url: url }, 'lazy');
+          }, this)).attr('src', url);
+        } else {
+          image = new Image();
+          image.onload = $.proxy(function() {
+            $element.css({
+              'background-image': 'url(' + url + ')',
+              'opacity': '1'
+            });
+            this._core.trigger('loaded', { element: $element, url: url }, 'lazy');
+          }, this);
+          image.src = url;
+        }
+      }, this));
+
+      this._loaded.push($item.get(0));
+    }
 
 	/**
 	 * Destroys the plugin.
